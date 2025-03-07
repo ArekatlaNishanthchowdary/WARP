@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_KEY = "AIzaSyBTgynSlAHtn5FDmUN1M3gO0WzJlOTKjMg";
+    const API_KEY = "YOUR-API-KEY";
     const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`;
     let uploadedImages = [];
     let totalResults = [];
