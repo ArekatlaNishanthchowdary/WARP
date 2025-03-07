@@ -19,7 +19,7 @@ To get a local copy up and running, follow these simple steps.
 
 1. **Clone the repo**
    ```sh
-   git clone https://github.com/yourusername/warp.git
+   git clone https://github.com/ArekatlaNishanthchowdary/WARP.git
    ```
 2. **Install the required packages**
    ```sh
