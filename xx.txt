@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WARP</title>
+
+
+<!-- Stylesheets -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="static/style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.8.0/dist/geosearch.css" />
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> <!-- Add this -->
+<script src="https://unpkg.com/leaflet-geosearch@3.8.0/dist/bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Your custom script should come last -->
+
+</head>
+<body>
+    <!-- Falling Leaves -->
+    <div class="falling-leaf green-leaf" style="left: 5%; animation-delay: 1s;"></div>
+    <div class="falling-leaf green-leaf" style="left: 25%; animation-delay: 4s;"></div>
+    <div class="falling-leaf green-leaf" style="left: 45%; animation-delay: 2s;"></div>
+    <div class="falling-leaf green-leaf" style="left: 65%; animation-delay: 3s;"></div>
+    <div class="falling-leaf green-leaf" style="left: 85%; animation-delay: 5s;"></div>
+    <div class="falling-leaf dry-leaf" style="left: 15%; animation-delay: 8s;"></div>
+    <div class="falling-leaf dry-leaf" style="left: 35%; animation-delay: 6s;"></div>
+    <div class="falling-leaf dry-leaf" style="left: 55%; animation-delay: 9s;"></div>
+    <div class="falling-leaf dry-leaf" style="left: 75%; animation-delay: 7s;"></div>
+    <div class="falling-leaf dry-leaf" style="left: 95%; animation-delay: 0s;"></div>
+
+    <!-- Navbar -->
+    <nav>
+        <div class="logo">
+            <i class="fas fa-leaf"></i>
+            WARP
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('services') }}">Services</a>
+            <a href="{{ url_for('contact') }}">Contact</a>
+        </div>
+        <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-sun"></i>
+            Light Mode
+        </button>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="video-background">
+            <video autoplay muted loop playsinline>
+                <source src="static/asserts/hero1.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1>WARP(Waste Analysis Report Project)</h1>
+            <p>Analyse the effects of waste dump on the Ground water and the Environment.</p>
+            <!-- <a href="#report-section" class="cta-button">Get Started</a> -->
+        </div>
+    </section>
+
+    <!-- Cards Section -->
+    <section class="cards-section" id="services">
+        <h2 class="section-title">Our Solutions</h2>
+        <div class="cards-container">
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-microscope"></i></div>
+                <div class="card-content">
+                    <h3 class="card-title">Environmental Analysis</h3>
+                    <p class="card-description">Analyze water table data and environmental impact at your selected location.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-leaf"></i></div>
+                <div class="card-content">
+                    <h3 class="card-title">Mitigation Strategies</h3>
+                    <p class="card-description">Receive recommendations based on groundwater and waste data.</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-users"></i></div>
+                <div class="card-content">
+                    <h3 class="card-title">Community Engagement</h3>
+                    <p class="card-description">Share reports and engage with local communities for better environmental management.</p>
+                </div>
+            </div>
+            <div class="floating-cube" style="top: 20%; left: 15%;"></div>
+            <div class="floating-cube" style="top: 40%; left: 80%; animation-delay: 5s;"></div>
+            <div class="floating-cube" style="top: 70%; left: 30%; animation-delay: 10s;"></div>
+        </div>
+    </section>
+
+    <!-- Analysis Workflow -->
+    <section class="analysis-workflow" id="about">
+        <h2 class="section-title">How It Works</h2>
+        <div class="workflow-container">
+            <div class="workflow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Data Collection</h3>
+                    <p>Click on the map to fetch water table data for any location.</p>
+                    <ul class="step-details">
+                        <li>GPS Coordinates</li>
+                        <li>District Information</li>
+                        <li>Groundwater Levels</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Analysis Process</h3>
+                    <p>Use AI to generate detailed environmental reports.</p>
+                    <ul class="step-details">
+                        <li>Groundwater Impact</li>
+                        <li>Waste Composition</li>
+                        <li>Risk Assessment</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Results & Recommendations</h3>
+                    <p>Download or email comprehensive reports with insights.</p>
+                    <ul class="step-details">
+                        <li>Impact Scores</li>
+                        <li>Mitigation Steps</li>
+                        <li>Community Actions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats-section">
+        <h2 class="section-title">Our Impact</h2>
+        <div class="stats-container">
+            <div class="stat-card">
+                <i class="fas fa-chart-line"></i>
+                <h3 class="stat-number">500+</h3>
+                <p class="stat-label">Locations Monitored</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-flask"></i>
+                <h3 class="stat-number">25,000+</h3>
+                <p class="stat-label">Reports Generated</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-map-marked-alt"></i>
+                <h3 class="stat-number">200+</h3>
+                <p class="stat-label">Districts Covered</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-seedling"></i>
+                <h3 class="stat-number">85%</h3>
+                <p class="stat-label">Accuracy Rate</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials-section">
+        <h2 class="section-title">What People Say</h2>
+        <div class="testimonials-container">
+            <div class="testimonial-card">
+                <div class="testimonial-image"><img src="assets/user1.jpg" alt="User"></div>
+                <p class="testimonial-text">"This tool has transformed our water management strategies."</p>
+                <h4 class="testimonial-author">Sarah Johnson</h4>
+                <p class="testimonial-position">Environmental Officer</p>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-image"><img src="assets/user2.jpg" alt="User"></div>
+                <p class="testimonial-text">"Accurate and easy-to-use groundwater data."</p>
+                <h4 class="testimonial-author">Michael Chen</h4>
+                <p class="testimonial-position">Community Leader</p>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-image"><img src="assets/user3.jpg" alt="User"></div>
+                <p class="testimonial-text">"The reports are incredibly detailed and actionable."</p>
+                <h4 class="testimonial-author">Emma Rodriguez</h4>
+                <p class="testimonial-position">Researcher</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Section -->
+    <!-- <section class="interactive-section" id="report-section">
+        <h2 class="section-title">Water Table Analysis</h2>
+        <div class="interactive-container">
+            <div class="map-full-width">
+                <div id="locationMap" data-lat="11.1271" data-lon="78.6569"></div>
+                <div class="location-data">
+                    <p id="coordinates">Click on the map to get latitude and longitude.</p>
+                    <p id="district" class="text-success"></p>
+                    <p id="water-table" class="text-primary"></p>
+                    <p id="refined-water-table" class="text-warning"></p>
+                </div>
+            </div>
+            <div class="analysis-controls">
+                <button id="generateReport" class="primary-button" style="display: none;">
+                    <i class="fas fa-play"></i> Create Report
+                </button>
+                <a id="downloadLink" class="primary-button" download="groundwater_report.pdf" style="display: none;">
+                    <i class="fas fa-download"></i> Download Report
+                </a>
+                <div style="display: flex; gap: 1rem;">
+                    <input type="email" id="emailInput" placeholder="Enter email" style="padding: 1rem; border-radius: 8px; border: none; display: none;">
+                    <button id="sendEmailButton" class="secondary-button" style="display: none;">
+                        <i class="fas fa-envelope"></i> Send Email
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section> -->
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Contact Us</a>
+            <a href="#">Careers</a>
+        </div>
+        <p class="copyright">© 2025 WaterTable Viewer. All rights reserved.</p>
+    </footer>
+ 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="static/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script>
+        emailjs.init('YKVdZ7XPVO26YzyKF');
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,397 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    themeToggle.addEventListener('click', () => {
+        body.classList.toggle('light-mode');
+        themeToggle.innerHTML = body.classList.contains('light-mode') 
+            ? '<i class="fas fa-moon"></i> Dark Mode' 
+            : '<i class="fas fa-sun"></i> Light Mode';
+    });
+
+    // Card Animation on Scroll
+    const cards = document.querySelectorAll('.card');
+    function checkCards() {
+        const triggerBottom = window.innerHeight * 0.8;
+        cards.forEach(card => {
+            const cardTop = card.getBoundingClientRect().top;
+            card.classList.toggle('active', cardTop < triggerBottom);
+        });
+    }
+    window.addEventListener('scroll', checkCards);
+    window.addEventListener('load', checkCards);
+
+    // Animate Stats and Testimonials on Scroll
+    const stats = document.querySelectorAll('.stat-card');
+    const testimonials = document.querySelectorAll('.testimonial-card');
+    const animateOnScroll = elements => {
+        elements.forEach(element => {
+            const { top, bottom } = element.getBoundingClientRect();
+            if (top < window.innerHeight && bottom > 0) {
+                element.style.transform = 'translateY(0)';
+                element.style.opacity = '1';
+            }
+        });
+    };
+    stats.forEach(stat => {
+        stat.style.transform = 'translateY(50px)';
+        stat.style.opacity = '0';
+        stat.style.transition = 'transform 0.6s ease-out, opacity 0.6s ease-out';
+    });
+    testimonials.forEach(testimonial => {
+        testimonial.style.transform = 'translateY(50px)';
+        testimonial.style.opacity = '0';
+        testimonial.style.transition = 'transform 0.6s ease-out, opacity 0.6s ease-out';
+    });
+    window.addEventListener('scroll', () => {
+        animateOnScroll(stats);
+        animateOnScroll(testimonials);
+    });
+    animateOnScroll(stats);
+    animateOnScroll(testimonials);
+
+    // Map Initialization
+    const map = L.map('locationMap', {
+        dragging: true,
+        touchZoom: true,
+        doubleClickZoom: true,
+        scrollWheelZoom: true,
+        boxZoom: true,
+        keyboard: true,
+        zoomControl: true
+    }).setView([11.1271, 78.6569], 7);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    let marker = L.marker([11.1271, 78.6569])
+        .addTo(map)
+        .bindPopup('Tamil Nadu, India')
+        .openPopup();
+
+    let latitude = null, longitude = null, district = null, waterTable = null, refinedWaterTable = null;
+
+    function onMapClick(e) {
+        latitude = e.latlng.lat.toFixed(6);
+        longitude = e.latlng.lng.toFixed(6);
+
+        marker.setLatLng(e.latlng)
+            .bindPopup(`Latitude: ${latitude}, Longitude: ${longitude}`)
+            .openPopup();
+
+        document.getElementById('coordinates').innerHTML = `Latitude: ${latitude}, Longitude: ${longitude}`;
+        document.getElementById('water-table').innerHTML = 'Fetching water table data...';
+        document.getElementById('refined-water-table').innerHTML = '';
+        document.getElementById('district').innerHTML = '';
+
+        document.getElementById('generateReport').style.display = 'none';
+        document.getElementById('emailInput').style.display = 'none';
+        document.getElementById('sendEmailButton').style.display = 'none';
+        document.getElementById('downloadLink').style.display = 'none';
+
+        fetch('/get_water_table', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitude: latitude, longitude: longitude })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data) throw new Error('No data received');
+
+            district = data.district;
+            waterTable = data.water_table_level;
+            refinedWaterTable = data.refined_water_table;
+
+            document.getElementById('district').innerHTML = `District: <strong>${district}</strong>`;
+            document.getElementById('water-table').innerHTML = `The groundwater level is: <strong>${waterTable} meters</strong>`;
+            document.getElementById('refined-water-table').innerHTML = `Gemini AI Prediction: <strong>${refinedWaterTable}</strong>`;
+
+            document.getElementById('generateReport').style.display = 'block';
+            document.getElementById('emailInput').style.display = 'block';
+            document.getElementById('sendEmailButton').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('water-table').innerHTML = 'Error fetching data!';
+            document.getElementById('district').innerHTML = '';
+            document.getElementById('refined-water-table').innerHTML = '';
+        });
+    }
+
+    // Add Search Control using leaflet-geosearch
+    const searchControl = new GeoSearch.GeoSearchControl({
+        provider: new GeoSearch.OpenStreetMapProvider({
+            params: {
+                limit: 5,
+                countrycodes: 'IN' // Optional: Restrict to India
+            }
+        }),
+        style: 'bar',
+        showMarker: false,
+        autoClose: true,
+        searchLabel: 'Search for a place',
+        retainZoomLevel: false,
+        animateZoom: true,
+        // Override default bounds behavior
+        updateMap: false // Prevent plugin from calling fitBounds
+    }).addTo(map);
+
+    // Custom search result handling
+    map.on('geosearch/showlocation', function (e) {
+        if (!e.location || typeof e.location.y !== 'number' || typeof e.location.x !== 'number') {
+            console.error('Invalid search result:', e.location);
+            alert('Search failed: Invalid location data. Please try a more specific search term.');
+            return;
+        }
+
+        const latlng = { lat: e.location.y, lng: e.location.x };
+        console.log('Search result:', { lat: latlng.lat, lng: latlng.lng, bounds: e.location.bounds });
+
+        // Always use setView instead of fitBounds
+        map.setView(latlng, 12);
+        onMapClick({ latlng: latlng });
+    });
+
+    // Log search errors
+    map.on('geosearch/error', function (e) {
+        console.error('Search error:', e.error);
+        alert('Search failed: ' + e.error.message);
+    });
+
+    document.getElementById('generateReport').addEventListener('click', function () {
+        if (!latitude || !longitude || !district || !waterTable || !refinedWaterTable) {
+            alert('Please select a location first!');
+            return;
+        }
+
+        const generateButton = this;
+        const loadingSpinner = document.createElement('div');
+        loadingSpinner.id = 'loadingSpinner';
+        loadingSpinner.innerHTML = `
+            <div style="border: 5px solid #f3f3f3; border-top: 5px solid var(--accent-teal); 
+                        border-radius: 50%; width: 50px; height: 50px; 
+                        animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            <p style="text-align:center; font-weight:bold; margin-top: 10px; color: var(--text-light);">Generating Report...</p>
+        `;
+        document.body.appendChild(loadingSpinner);
+
+        generateButton.disabled = true;
+        generateButton.innerText = 'Generating Report...';
+
+        fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyCxAPLuwEEbnObumhwyya6ReF0JUzu4fkU', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: `Generate a structured Environmental Impact Report (EIR) for the following location:\n\n
+                            - Latitude: ${latitude}, Longitude: ${longitude}\n
+                            - District: ${district}\n
+                            - Groundwater Level: ${waterTable} meters\n
+                            - Refined Groundwater Table: ${refinedWaterTable}\n
+                            - Waste Composition:\n
+                              - Plastics: 30%\n
+                              - Biodegradable Waste: 30%\n
+                              - Metals: 10%\n
+                              - Glass: 10%\n
+                              - Other Waste: 20%\n\n
+                            Include sections on:\n
+                            1. Introduction\n
+                            2. Environmental and Groundwater Impact Analysis\n
+                            3. Waste Management Recommendations\n
+                            4. Conclusion\n
+                            Format the report with headings, bullet points, and clear structure.`
+                    }]
+                }]
+            })
+        })
+        .then(response => response.json())
+        .then(geminiData => {
+            let reportText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: No report content received from Gemini.';
+            reportText = reportText
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br/>');
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text('Environmental Impact Report', 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Location: ${district} (${latitude}, ${longitude})`, 20, 30);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            let y = 40;
+            const plainText = reportText.replace(/<strong>/g, "").replace(/<\/strong>/g, "")
+            .replace(/<em>/g, "").replace(/<\/em>/g, "")
+            .replace(/<br\/>/g, "\n");
+            const lines = doc.splitTextToSize(plainText, 170);
+            lines.forEach(line => {
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.text(line, 20, y);
+                y += 5;
+            });
+
+            const pdfBlob = doc.output('blob');
+            const url = URL.createObjectURL(pdfBlob);
+            document.getElementById('downloadLink').href = url;
+            document.getElementById('downloadLink').style.display = 'block';
+
+            generateButton.disabled = false;
+            generateButton.innerText = 'Create Report';
+            document.getElementById('loadingSpinner').remove();
+        })
+        .catch(error => {
+            console.error('Error generating report:', error);
+            alert('Failed to generate report. Please try again.');
+            generateButton.disabled = false;
+            generateButton.innerText = 'Create Report';
+            document.getElementById('loadingSpinner').remove();
+        });
+    });
+
+    document.getElementById('generateReport').addEventListener('click', function () {
+        if (!latitude || !longitude || !district || !waterTable || !refinedWaterTable) {
+            alert('Please select a location first!');
+            return;
+        }
+
+        const generateButton = this;
+        const loadingSpinner = document.createElement('div');
+        loadingSpinner.id = 'loadingSpinner';
+        loadingSpinner.innerHTML = `
+            <div style="border: 5px solid #f3f3f3; border-top: 5px solid var(--accent-teal); 
+                        border-radius: 50%; width: 50px; height: 50px; 
+                        animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            <p style="text-align:center; font-weight:bold; margin-top: 10px; color: var(--text-light);">Generating Report...</p>
+        `;
+        document.body.appendChild(loadingSpinner);
+
+        generateButton.disabled = true;
+        generateButton.innerText = 'Generating Report...';
+
+        fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyCxAPLuwEEbnObumhwyya6ReF0JUzu4fkU', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: `Generate a structured Environmental Impact Report (EIR) for the following location:\n\n
+                            - Latitude: ${latitude}, Longitude: ${longitude}\n
+                            - District: ${district}\n
+                            - Groundwater Level: ${waterTable} meters\n
+                            - Refined Groundwater Table: ${refinedWaterTable}\n
+                            - Waste Composition:\n
+                              - Plastics: 30%\n
+                              - Biodegradable Waste: 30%\n
+                              - Metals: 10%\n
+                              - Glass: 10%\n
+                              - Other Waste: 20%\n\n
+                            Include sections on:\n
+                            1. Introduction\n
+                            2. Environmental and Groundwater Impact Analysis\n
+                            3. Waste Management Recommendations\n
+                            4. Conclusion\n
+                            Format the report with headings, bullet points, and clear structure.`
+                    }]
+                }]
+            })
+        })
+        .then(response => response.json())
+        .then(geminiData => {
+            let reportText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: No report content received from Gemini.';
+            reportText = reportText
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br/>');
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text('Environmental Impact Report', 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Location: ${district} (${latitude}, ${longitude})`, 20, 30);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            let y = 40;
+            const plainText = reportText.replace(/<strong>/g, "").replace(/<\/strong>/g, "")
+                .replace(/<em>/g, "").replace(/<\/em>/g, "")
+                .replace(/<br\/>/g, "\n");
+            const lines = doc.splitTextToSize(plainText, 170);
+            lines.forEach(line => {
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.text(line, 20, y);
+                y += 5;
+            });
+
+            // Generate PDF as base64
+            const pdfBase64 = doc.output('datauristring'); // "data:application/pdf;base64,..."
+            const pdfBlob = doc.output('blob');
+            const url = URL.createObjectURL(pdfBlob);
+            document.getElementById('downloadLink').href = url;
+            document.getElementById('downloadLink').style.display = 'block';
+
+            // Store PDF base64 for email
+            window.generatedPdfBase64 = pdfBase64;
+
+            generateButton.disabled = false;
+            generateButton.innerText = 'Create Report';
+            document.getElementById('loadingSpinner').remove();
+        })
+        .catch(error => {
+            console.error('Error generating report:', error);
+            alert('Failed to generate report. Please try again.');
+            generateButton.disabled = false;
+            generateButton.innerText = 'Create Report';
+            document.getElementById('loadingSpinner').remove();
+        });
+    });
+
+    document.getElementById('sendEmailButton').addEventListener('click', function () {
+        const email = document.getElementById('emailInput').value;
+        if (!email) {
+            alert('Please enter an email address.');
+            return;
+        }
+        if (!latitude || !longitude || !district || !waterTable || !refinedWaterTable) {
+            alert('Please select a location first!');
+            return;
+        }
+        if (!window.generatedPdfBase64) {
+            alert('Please generate the report first!');
+            return;
+        }
+
+        const sendButton = this;
+        sendButton.disabled = true;
+        sendButton.innerText = 'Sending...';
+
+        // Send email with EmailJS
+        emailjs.send('service_84k4yan', 'template_sko1cwv', {
+            to_email: email,
+            district: district,
+            lat: latitude,
+            lon: longitude,
+            water_table: waterTable,
+            refined_water_table: refinedWaterTable,
+            pdf_link: window.generatedPdfBase64  // Include the base64 data URI
+        })
+        .then(() => {
+            alert('Email sent successfully! Check your inbox for the report link.');
+            sendButton.disabled = false;
+            sendButton.innerText = 'Send Email';
+        })
+        .catch(error => {
+            console.error('Error sending email:', error);
+            alert('Failed to send email. Please try again.');
+            sendButton.disabled = false;
+            sendButton.innerText = 'Send Email';
+        });
+    });
+    map.on('click', onMapClick);
+});
