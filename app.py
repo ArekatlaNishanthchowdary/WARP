@@ -41,8 +41,8 @@ WATER_TABLE_COL = "WaterTableLevel"
 DISTRICT_COL = "Distict"
 
 # Google Gemini API Configuration
-GEMINI_API_KEY = "AIzaSyCxAPLuwEEbnObumhwyya6ReF0JUzu4fkU"
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+GEMINI_API_KEY = "YOUR-GEMINI-API-KEY"
+GEMINI_API_URL = "YOUR-GEMINI-API-URL"
 
 # Your existing Gemini functions (unchanged)
 def get_gemini_groundwater_data(lat, lon, district, water_table_level):
