@@ -1,7 +1,4 @@
 # Garbage-Analysis-Detection
-
-Here is a comprehensive README for your GitHub project, WARP (Waste Analysis Report Project). This README provides an overview of the project, setup instructions, usage details, and information on dependencies and contributing. You can copy and paste this directly into your GitHub repository's `README.md` file.
-
 ---
 
 # WARP (Waste Analysis Report Project)
@@ -79,16 +76,3 @@ Contributions are what make the open-source community such an amazing place to l
    ```
 5. Open a Pull Request
 
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
----
-
-### Notes:
-- Replace `https://github.com/yourusername/warp.git` with your actual GitHub repository URL.
-- Ensure you have a `requirements.txt` file in your repository that lists all necessary Python packages (e.g., Flask).
-- Update the EmailJS user ID in `index.html` as per your EmailJS account settings.
-- If you have a `LICENSE` file, make sure it is included in the repository; otherwise, you can remove the license section or add the appropriate license.
-
-This README provides a clear and structured overview of your project, making it easy for others to understand, set up, and contribute to WARP. Let me know if you need any further adjustments!
