@@ -414,10 +414,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
                 .replace(/\n/g, '<br/>');
 
-            const { jsPDF } = window.jspdf || window; // Fallback to window if jspdf is global
-            if (!jsPDF) {
-                throw new Error('jsPDF is not loaded correctly');
-            }
+            const { jsPDF } = window.jspdf || window;
+            if (!jsPDF) throw new Error('jsPDF is not loaded correctly');
             const doc = new jsPDF();
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(16);
@@ -428,8 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
             doc.setFontSize(10);
             let y = 40;
             const plainText = reportText.replace(/<strong>/g, "").replace(/<\/strong>/g, "")
-                .replace(/<em>/g, "").replace(/<\/em>/g, "")
-                .replace(/<br\/>/g, "\n");
+                .replace(/<em>/g, "").replace(/<\/em>/g, "").replace(/<br\/>/g, "\n");
             const lines = doc.splitTextToSize(plainText, 170);
             lines.forEach(line => {
                 if (y > 270) { doc.addPage(); y = 20; }
@@ -437,11 +434,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 y += 5;
             });
 
-            window.generatedPdfBase64 = doc.output('datauristring');
+            // Generate PDF Blob and Base64
             const pdfBlob = doc.output('blob');
-            const url = window.URL.createObjectURL(pdfBlob); // Explicitly use window.URL
-            document.getElementById('downloadLink').href = url;
+            const pdfBase64 = doc.output('datauristring').split(',')[1]; // Base64 without prefix
+            const pdfUrl = window.URL.createObjectURL(pdfBlob);
+
+            // Display PDF above footer
+            const footer = document.querySelector('footer');
+            let pdfContainer = document.getElementById('pdfContainer');
+            if (!pdfContainer) {
+                pdfContainer = document.createElement('div');
+                pdfContainer.id = 'pdfContainer';
+                pdfContainer.style.cssText = 'margin: 20px auto; width: 80%; height: 500px;';
+                footer.parentNode.insertBefore(pdfContainer, footer);
+            }
+            pdfContainer.innerHTML = `<iframe src="${pdfUrl}" width="100%" height="100%" style="border: none;"></iframe>`;
+
+            // Set download link
+            document.getElementById('downloadLink').href = pdfUrl;
             document.getElementById('downloadLink').style.display = 'block';
+
+            // Send PDF to Flask server to save and host
+            const formData = new FormData();
+            const filename = `report_${district}_${Date.now()}.pdf`;
+            formData.append('pdf', pdfBlob, filename);
+            fetch('/save_pdf', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                window.generatedPdfUrl = data.pdf_url; // Store local hosted URL
+            })
+            .catch(error => console.error('Error saving PDF:', error));
 
             generateButton.disabled = false;
             generateButton.innerText = 'Create Report';
@@ -466,15 +492,15 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please select a location first!');
             return;
         }
-        if (!window.generatedPdfBase64) {
+        if (!window.generatedPdfUrl) {
             alert('Please generate the report first!');
             return;
         }
-    
+
         const sendButton = this;
         sendButton.disabled = true;
         sendButton.innerText = 'Sending...';
-    
+
         emailjs.send('service_84k4yan', 'template_sko1cwv', {
             to_email: email,
             district: district,
@@ -483,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
             water_table: waterTable,
             refined_water_table: refinedWaterTable,
             to_name: email.split('@')[0],
-            pdf_link: window.generatedPdfBase64 // Full base64 data URI
+            pdf_link: window.generatedPdfUrl // Local hosted URL
         })
         .then(() => {
             alert('Email sent successfully! Check your inbox for the report link.');

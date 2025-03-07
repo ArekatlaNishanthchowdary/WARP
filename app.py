@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for, send_from_directory
 from flask_session import Session  # For server-side session management
 import pandas as pd
 import numpy as np
@@ -22,6 +22,12 @@ app = Flask(__name__)
 app.secret_key = "your-secret-key-here"  # Replace with a secure key (e.g., os.urandom(24).hex())
 app.config["SESSION_TYPE"] = "filesystem"  # Use filesystem for session storage
 Session(app)
+
+# Configure uploads folder
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Load Excel file once at startup
 excel_file = "updated_merged.xlsx"
@@ -312,57 +318,69 @@ def download_report():
         print(f"❌ Error generating report: {e}")
         return jsonify({"error": "Failed to generate report"}), 500
 
+# New route to save PDF from frontend
+@app.route("/save_pdf", methods=["POST"])
+def save_pdf():
+    try:
+        if 'pdf' not in request.files:
+            return jsonify({'error': 'No PDF file provided'}), 400
+        
+        pdf_file = request.files['pdf']
+        filename = pdf_file.filename
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        pdf_file.save(filepath)
+
+        # Generate a local URL
+        pdf_url = f"http://localhost:5000/uploads/{filename}"
+        return jsonify({'pdf_url': pdf_url}), 200
+    except Exception as e:
+        print(f"❌ Error saving PDF: {e}")
+        return jsonify({'error': 'Failed to save PDF'}), 500
+
+# Route to serve uploaded PDFs
+@app.route('/uploads/<filename>')
+def serve_pdf(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 @app.route("/send_email", methods=["POST"])
 def send_email():
     try:
-        name = request.form.get("name")
-        email = request.form.get("email")
-        phone = request.form.get("phone", "N/A")
-        message = request.form.get("message")
-        lat = request.form.get("lat", "0")
-        lon = request.form.get("lon", "0")
-        district = request.form.get("district", "Unknown")
-        water_table = request.form.get("water_table", "N/A")
-        refined_water_table = request.form.get("refined_water_table", "N/A")
+        data = request.get_json()
+        email = data.get("email")
+        lat = data.get("lat", "0")
+        lon = data.get("lon", "0")
+        district = data.get("district", "Unknown")
+        water_table = data.get("water_table", "N/A")
+        refined_water_table = data.get("refined_water_table", "N/A")
+        pdf_url = data.get("pdf_url")  # Locally hosted PDF URL from frontend
 
-        if not email or not name or not message:
-            return jsonify({"error": "Name, email, and message are required"}), 400
+        if not email or not pdf_url:
+            return jsonify({"error": "Email and PDF URL are required"}), 400
 
-        pdf_buffer = io.BytesIO()
-        c = canvas.Canvas(pdf_buffer, pagesize=letter)
-        c.setFont("Helvetica", 12)
-        c.drawString(100, 750, "📄 Contact Form Submission")
-        c.drawString(100, 730, f"👤 Name: {name}")
-        c.drawString(100, 710, f"✉️ Email: {email}")
-        c.drawString(100, 690, f"📞 Phone: {phone}")
-        c.drawString(100, 670, f"💬 Message: {message[:50]}...")
-        c.drawString(100, 650, f"📍 Latitude: {lat}")
-        c.drawString(100, 630, f"📍 Longitude: {lon}")
-        c.drawString(100, 610, f"🏛️ District: {district}")
-        c.drawString(100, 590, f"💧 Water Table: {water_table}")
-        c.drawString(100, 570, f"🤖 Refined Water Table: {refined_water_table}")
-        c.save()
-        pdf_buffer.seek(0)
-
+        # Email setup
         msg = MIMEMultipart()
         msg["From"] = os.getenv("EMAIL_USER")
         msg["To"] = email
-        msg["Subject"] = "Contact Form Submission - WARP"
+        msg["Subject"] = "Environmental Impact Report - WARP"
 
-        body = f"Name: {name}\nEmail: {email}\nPhone: {phone}\nMessage: {message}\n\nAdditional Data:\nLatitude: {lat}\nLongitude: {lon}\nDistrict: {district}\nWater Table: {water_table}\nRefined Water Table: {refined_water_table}"
+        body = (
+            f"Dear User,\n\n"
+            f"Your Environmental Impact Report is ready. Below are the details:\n\n"
+            f"Location: {lat}, {lon} ({district} district)\n"
+            f"Groundwater Level: {water_table} meters\n"
+            f"Refined Groundwater Table: {refined_water_table}\n\n"
+            f"You can download the report here: {pdf_url}\n\n"
+            f"Regards,\nWARP Team"
+        )
         msg.attach(MIMEText(body, "plain"))
 
-        part = MIMEBase("application", "octet-stream")
-        part.set_payload(pdf_buffer.read())
-        encoders.encode_base64(part)
-        part.add_header("Content-Disposition", "attachment; filename=Contact_Form_Submission.pdf")
-        msg.attach(part)
-
+        # Send email
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
             server.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
             server.sendmail(msg["From"], msg["To"], msg.as_string())
 
+        print("✅ Email sent successfully!")
         return jsonify({"message": "Email sent successfully!"})
     except smtplib.SMTPAuthenticationError:
         print("❌ SMTP Authentication Error: Check EMAIL_USER and EMAIL_PASS")
